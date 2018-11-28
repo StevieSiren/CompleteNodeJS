@@ -4,7 +4,7 @@ var express = require('express'),
 
 
 // Local imports
-var {mongoose} = require('../db/mongoose'),
+var {mongoose} = require('../server/db/mongoose'),
     {Todo} = require('../models/Todo'),
     {User} = require('../models/User');
 
