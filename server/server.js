@@ -1,19 +1,23 @@
 // Library imports
-var express = require('express'),
-    bodyParser = require('body-parser'),
-    {ObjectID} = require('mongodb');
+const express = require('express'),
+      bodyParser = require('body-parser'),
+      {ObjectID} = require('mongodb'),
+      _ = require('lodash');
 
 
 // Local imports
-var {mongoose} = require('../server/db/mongoose'),
-    {Todo} = require('../models/Todo'),
-    {User} = require('../models/User');
+const {mongoose} = require('../server/db/mongoose'),
+      {Todo} = require('../models/Todo'),
+      {User} = require('../models/User');
 
-var app = express();
+const app = express();
 
 app.use(bodyParser.json());
 
-
+// =====================================================================
+// ROUTES ==============================================================
+// =====================================================================
+// POST ROUTE
 app.post('/todos', (req, res) => {
     var todo = new Todo({
         text: req.body.text
@@ -28,7 +32,7 @@ app.post('/todos', (req, res) => {
     });
 });
 
-
+// GET ROUTE
 app.get('/todos', (req, res) => {
     Todo.find()
       .then((todos) => {
@@ -60,9 +64,60 @@ app.get('/todos/:id', (req, res) => {
       });
 });
 
+// DELETE
+app.delete('/todos/:id', (req, res) => {
+    var id = req.params.id;
+
+    if(!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
+
+    Todo.findByIdAndRemove(id)
+        .then((todo) => {
+            if(!todo) {
+                return res.status(400).send();
+            }
+            res.send({todo});
+        })
+        .catch((err) => {
+            res.status(400).send();
+        });
+});
 
 
-// =======================================================================
+// UPDATE
+app.patch('/todos/:id', (req, res) => {
+    var id = req.params.id,
+        body = _.pick(req.body, ['text', 'completed']);
+    
+    if(!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
+
+    if(_.isBoolean(body.completed) && body.completed) {
+        body.completedAt = new Date().getTime();
+    } else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+
+    Todo.findByIdAndUpdate(id, {$set: body}, {new: true})
+        .then((todo) => {
+            if(!todo) {
+                return res.status(404).send()
+            }
+            res.send({todo});
+        })
+        .catch((err) => {
+            res.status(400).send();
+        });
+});
+
+
+
+// =====================================================================
+// LISTENING ===========================================================
+// =====================================================================
 app.listen(3000, () => {
     console.log('Constructing additional pylons...');
 });
